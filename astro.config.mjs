@@ -1,12 +1,22 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import { loadEnv } from 'vite';
+import { existsSync, readFileSync } from 'node:fs';
 
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 
-const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '');
-const analyticsBaseUrl = env.ANALYTICS_API_BASE_URL || 'http://3.149.74.186:8080/v1';
+const localEnv = {};
+if (existsSync('.env')) {
+  for (const line of readFileSync('.env', 'utf8').split(/\r?\n/)) {
+    const separator = line.indexOf('=');
+    if (separator < 1 || line.trimStart().startsWith('#')) continue;
+    localEnv[line.slice(0, separator).trim()] = line.slice(separator + 1).trim();
+  }
+}
+
+const getEnv = (name) => process.env[name] || localEnv[name];
+const analyticsBaseUrl = getEnv('ANALYTICS_API_BASE_URL') || 'http://3.149.74.186:8080/v1';
+const analyticsToken = getEnv('ANALYTICS_BEARER_TOKEN');
 
 // https://astro.build/config
 export default defineConfig({
@@ -20,8 +30,8 @@ export default defineConfig({
           target: analyticsBaseUrl,
           changeOrigin: true,
           rewrite: (path) => path.replace('/.netlify/functions/analytics', ''),
-          headers: env.ANALYTICS_BEARER_TOKEN
-            ? { Authorization: `Bearer ${env.ANALYTICS_BEARER_TOKEN}` }
+          headers: analyticsToken
+            ? { Authorization: `Bearer ${analyticsToken}` }
             : {}
         }
       }
