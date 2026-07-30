@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Outfit", sans-serif;
+  --color-primary: #001391;
+  --color-secondary: #0c6dff;
+  --color-tertiary: #f7f8f8;
+  --color-background: #f7f8f8;
+  --color-white: #ffffff;
+  
+  /* Shadcn standard variables overrides */
+  --color-foreground: #1a202c;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a202c;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #1a202c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+  --color-accent: #f3f4f6;
+  --color-accent-foreground: #1a202c;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e5e7eb;
+  --color-input: #e5e7eb;
+  --color-ring: #001391;
+  --color-chart-1: #001391;
+  --color-chart-2: #0c6dff;
+  --color-chart-3: #60a5fa;
+  --color-chart-4: #93c5fd;
+  --color-chart-5: #bfdbfe;
+  
+  --radius-lg: 1rem;
+  --radius-md: calc(var(--radius-lg) - 4px);
+  --radius-sm: calc(var(--radius-lg) - 8px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}

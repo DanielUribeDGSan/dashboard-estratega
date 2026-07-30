@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { UsersPage } from '../components/UsersPage';
+---
+
+<Layout title="Dashboard Analytics - Usuarios">
+	<UsersPage client:only="react" />
+</Layout>
