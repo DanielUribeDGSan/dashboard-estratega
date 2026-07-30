@@ -9,8 +9,8 @@ export default async (request) => {
     return json(405, { message: 'Método no permitido' });
   }
 
-  const baseUrl = Netlify.env.get('ANALYTICS_API_BASE_URL');
-  const token = Netlify.env.get('ANALYTICS_BEARER_TOKEN');
+  const baseUrl = process.env.ANALYTICS_API_BASE_URL;
+  const token = process.env.ANALYTICS_BEARER_TOKEN;
   if (!baseUrl || !token) {
     return json(500, { message: 'Faltan variables de analítica en Netlify' });
   }
