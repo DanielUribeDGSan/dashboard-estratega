@@ -104,6 +104,7 @@ export const downloadDashboardPdf = async (pageName: string) => {
   const target = document.querySelector<HTMLElement>('[data-dashboard-export]');
   if (!target) throw new Error('No se encontró el contenido del dashboard');
 
+  await document.fonts?.ready;
   const canvas = await html2canvas(target, {
     backgroundColor: '#f7f8fa',
     scale: Math.min(window.devicePixelRatio || 1, 2),
@@ -112,16 +113,61 @@ export const downloadDashboardPdf = async (pageName: string) => {
     windowWidth: Math.max(target.scrollWidth, 1280),
     width: target.scrollWidth,
     height: target.scrollHeight,
+    onclone: (clonedDocument) => {
+      clonedDocument.querySelectorAll<HTMLElement>('[data-dashboard-export] h1').forEach((heading) => {
+        heading.style.whiteSpace = 'nowrap';
+        heading.style.lineHeight = '1.25';
+      });
+    },
   });
   const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const imageHeight = (canvas.height * pageWidth) / canvas.width;
-  const image = canvas.toDataURL('image/jpeg', 0.92);
+  const margin = 8;
+  const usableWidth = pageWidth - margin * 2;
+  const usableHeight = pageHeight - margin * 2;
+  const maxSliceCssHeight = (target.scrollWidth * usableHeight) / usableWidth;
+  const targetRect = target.getBoundingClientRect();
+  const blocks = [...target.querySelectorAll<HTMLElement>('[data-export-block]')].map((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      top: Math.max(0, rect.top - targetRect.top),
+      bottom: Math.min(target.scrollHeight, rect.bottom - targetRect.top),
+    };
+  });
+  const slices: Array<{ start: number; end: number }> = [];
+  let start = 0;
 
-  for (let offset = 0, page = 0; offset < imageHeight; offset += pageHeight, page += 1) {
-    if (page > 0) pdf.addPage('a4', 'landscape');
-    pdf.addImage(image, 'JPEG', 0, -offset, pageWidth, imageHeight, undefined, 'FAST');
+  while (start < target.scrollHeight - 1) {
+    const desiredEnd = Math.min(start + maxSliceCssHeight, target.scrollHeight);
+    if (desiredEnd >= target.scrollHeight) {
+      slices.push({ start, end: target.scrollHeight });
+      break;
+    }
+    const crossingBlocks = blocks.filter((block) => block.top < desiredEnd && block.bottom > desiredEnd);
+    const safeEnd = crossingBlocks.length ? Math.min(...crossingBlocks.map((block) => block.top)) - 10 : desiredEnd;
+    const end = safeEnd > start + 180 ? safeEnd : desiredEnd;
+    slices.push({ start, end });
+    start = end;
   }
+
+  if (slices.length === 0) throw new Error('El dashboard no tiene contenido para exportar');
+
+  const pixelRatio = canvas.width / target.scrollWidth;
+  slices.forEach((slice, page) => {
+    const sourceY = Math.max(0, Math.round(slice.start * pixelRatio));
+    const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil((slice.end - slice.start) * pixelRatio));
+    const pageCanvas = document.createElement('canvas');
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = sourceHeight;
+    const context = pageCanvas.getContext('2d');
+    if (!context) throw new Error('No se pudo preparar una página del PDF');
+    context.fillStyle = '#f7f8fa';
+    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    context.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+    const renderedHeight = (sourceHeight * usableWidth) / pageCanvas.width;
+    if (page > 0) pdf.addPage('a4', 'landscape');
+    pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, usableWidth, renderedHeight, undefined, 'FAST');
+  });
   pdf.save(`dashboard-${pageName}-${filePeriod()}.pdf`);
 };
