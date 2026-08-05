@@ -124,15 +124,32 @@ export const downloadDashboardPdf = async (pageName: string) => {
   if (!target) throw new Error('No se encontró el contenido del dashboard');
 
   await document.fonts?.ready;
+  await new Promise((resolve) => window.setTimeout(resolve, 700));
+  const captureRect = target.getBoundingClientRect();
+  const captureWidth = captureRect.width;
+  const captureHeight = target.scrollHeight;
   const canvas = await html2canvas(target, {
     backgroundColor: '#f7f8fa',
     scale: Math.min(window.devicePixelRatio || 1, 2),
     useCORS: true,
     logging: false,
-    windowWidth: Math.max(target.scrollWidth, 1280),
-    width: target.scrollWidth,
-    height: target.scrollHeight,
     onclone: (clonedDocument) => {
+      const exportRoot = clonedDocument.querySelector<HTMLElement>('[data-dashboard-export]');
+      if (exportRoot) {
+        exportRoot.style.backgroundColor = '#f7f8fa';
+        exportRoot.style.overflow = 'visible';
+        exportRoot.querySelectorAll<HTMLElement>('*').forEach((element) => {
+          element.style.animation = 'none';
+          element.style.transition = 'none';
+        });
+        exportRoot.querySelectorAll<HTMLElement>('[data-export-block]').forEach((card) => {
+          card.style.background = '#ffffff';
+          card.style.backgroundColor = '#ffffff';
+          card.style.borderColor = '#e5e7eb';
+          card.style.boxShadow = 'none';
+          card.style.opacity = '1';
+        });
+      }
       clonedDocument.querySelectorAll<HTMLElement>('[data-dashboard-export] h1').forEach((heading) => {
         heading.style.whiteSpace = 'nowrap';
         heading.style.lineHeight = '1.25';
@@ -145,22 +162,22 @@ export const downloadDashboardPdf = async (pageName: string) => {
   const margin = 8;
   const usableWidth = pageWidth - margin * 2;
   const usableHeight = pageHeight - margin * 2;
-  const maxSliceCssHeight = (target.scrollWidth * usableHeight) / usableWidth;
+  const maxSliceCssHeight = (captureWidth * usableHeight) / usableWidth;
   const targetRect = target.getBoundingClientRect();
   const blocks = [...target.querySelectorAll<HTMLElement>('[data-export-block]')].map((element) => {
     const rect = element.getBoundingClientRect();
     return {
       top: Math.max(0, rect.top - targetRect.top),
-      bottom: Math.min(target.scrollHeight, rect.bottom - targetRect.top),
+      bottom: Math.min(captureHeight, rect.bottom - targetRect.top),
     };
   });
   const slices: Array<{ start: number; end: number }> = [];
   let start = 0;
 
-  while (start < target.scrollHeight - 1) {
-    const desiredEnd = Math.min(start + maxSliceCssHeight, target.scrollHeight);
-    if (desiredEnd >= target.scrollHeight) {
-      slices.push({ start, end: target.scrollHeight });
+  while (start < captureHeight - 1) {
+    const desiredEnd = Math.min(start + maxSliceCssHeight, captureHeight);
+    if (desiredEnd >= captureHeight) {
+      slices.push({ start, end: captureHeight });
       break;
     }
     const crossingBlocks = blocks.filter((block) => block.top < desiredEnd && block.bottom > desiredEnd);
@@ -172,7 +189,7 @@ export const downloadDashboardPdf = async (pageName: string) => {
 
   if (slices.length === 0) throw new Error('El dashboard no tiene contenido para exportar');
 
-  const pixelRatio = canvas.width / target.scrollWidth;
+  const pixelRatio = canvas.width / captureWidth;
   slices.forEach((slice, page) => {
     const sourceY = Math.max(0, Math.round(slice.start * pixelRatio));
     const sourceHeight = Math.min(canvas.height - sourceY, Math.ceil((slice.end - slice.start) * pixelRatio));
