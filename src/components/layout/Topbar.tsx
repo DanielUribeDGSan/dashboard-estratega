@@ -68,7 +68,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
   return (
     <header className="sticky top-0 z-20 flex min-h-16 w-full items-center gap-2 bg-background px-4 py-3 sm:gap-4 sm:px-6 lg:min-h-20 lg:px-8">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Button aria-label="Abrir menú" variant="ghost" size="icon" onClick={onMenuClick} className="shrink-0 lg:hidden">
+        <Button aria-label="Abrir menú" variant="ghost" size="icon" onClick={onMenuClick} className="shrink-0 cursor-pointer lg:hidden">
           <Menu className="size-5" />
         </Button>
         {currentPath === '/' || currentPath === '/users' || currentPath === '/articles' || currentPath === '/sections' ? (
@@ -80,7 +80,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
                   role="combobox"
                   aria-label="Periodo de analítica"
                   aria-expanded={periodOpen}
-                  className="h-10 min-w-0 w-full max-w-sm justify-between rounded-lg border-0 bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm hover:bg-white/80 focus-visible:border-transparent focus-visible:ring-0 sm:px-4 sm:text-sm"
+                  className="h-10 min-w-0 w-full max-w-sm cursor-pointer justify-between rounded-lg border-0 bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm hover:bg-white/80 focus-visible:border-transparent focus-visible:ring-0 sm:px-4 sm:text-sm"
                 />
               }
             >
@@ -102,7 +102,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
                         value={`${option.label} ${option.value}`}
                         data-checked={period === option.value}
                         onSelect={() => changePeriod(option.value)}
-                        className="rounded-lg px-3 py-2.5"
+                        className="cursor-pointer rounded-lg px-3 py-2.5"
                       >
                         <CalendarDays className="size-4 text-slate-400" />
                         <span>{option.label}</span>
@@ -121,7 +121,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
           target="_blank"
           rel="noreferrer"
           aria-label="Abrir dashboard de usuarios"
-          className="flex h-10 shrink-0 items-center gap-2 rounded-lg bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm transition hover:bg-blue-50 sm:px-4 sm:text-sm"
+          className="flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm transition hover:bg-blue-50 sm:px-4 sm:text-sm"
         >
           <Users className="size-4 text-[#0c6dff]" />
           <span className="hidden sm:inline">Dashboard de usuarios</span>
@@ -134,7 +134,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
                 variant="ghost"
                 aria-label="Abrir opciones de descarga"
                 disabled={downloading !== null}
-                className="h-10 shrink-0 gap-2 rounded-lg border-0 bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm hover:bg-blue-50 sm:px-4 sm:text-sm"
+                className="h-10 shrink-0 cursor-pointer gap-2 rounded-lg border-0 bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm hover:bg-blue-50 disabled:cursor-not-allowed sm:px-4 sm:text-sm"
               />
             }
           >
@@ -143,11 +143,11 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
             <ChevronDown className="hidden size-3.5 text-slate-400 sm:block" />
           </PopoverTrigger>
           <PopoverContent align="end" className="w-64 rounded-xl border-0 p-2 shadow-xl">
-            <button type="button" onClick={() => runDownload('pdf')} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-blue-50">
+            <button type="button" onClick={() => runDownload('pdf')} className="flex w-full cursor-pointer items-start gap-3 rounded-lg p-3 text-left transition hover:bg-blue-50">
               <FileText className="mt-0.5 size-5 shrink-0 text-red-500" />
               <span><b className="block text-sm text-slate-800">Descargar PDF</b><small className="text-xs text-slate-500">Vista completa con gráficas</small></span>
             </button>
-            <button type="button" onClick={() => runDownload('xlsx')} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-emerald-50">
+            <button type="button" onClick={() => runDownload('xlsx')} className="flex w-full cursor-pointer items-start gap-3 rounded-lg p-3 text-left transition hover:bg-emerald-50">
               <FileSpreadsheet className="mt-0.5 size-5 shrink-0 text-emerald-600" />
               <span><b className="block text-sm text-slate-800">Descargar Excel</b><small className="text-xs text-slate-500">Una pestaña por cada gráfica</small></span>
             </button>

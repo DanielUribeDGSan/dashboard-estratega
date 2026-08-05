@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = fa
             <a
               key={item.path}
               href={`${item.path}${periodSearch}`}
-              className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'h-16 flex-col justify-center gap-1'} w-full rounded-2xl transition-all duration-300 ${
+              className={`flex cursor-pointer items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'h-16 flex-col justify-center gap-1'} w-full rounded-2xl transition-all duration-300 ${
                 isActive
                   ? 'bg-secondary text-white shadow-md shadow-secondary/30'
                   : 'text-gray-400 hover:bg-gray-50 hover:text-gray-700'
@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = fa
       </nav>
 
       <div className={mobile ? "mt-auto flex w-full flex-col gap-2" : "mt-auto flex w-full flex-col gap-6 px-4"}>
-        <button className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}>
+        <button className={`flex cursor-pointer items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}>
           <HelpCircle className="w-5 h-5" />
           {mobile && <span>Ayuda</span>}
         </button>
@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = fa
             window.localStorage.removeItem('site_access_granted');
             window.location.assign('/');
           }}
-          className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}
+          className={`flex cursor-pointer items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}
         >
           <LogOut className="w-5 h-5" />
           {mobile && <span>Cerrar sesión</span>}
