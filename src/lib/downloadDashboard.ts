@@ -1,4 +1,5 @@
-import { api } from '@/services/api';
+import html2canvas from 'html2canvas-pro';
+import { jsPDF } from 'jspdf';
 
 const periodBounds = (period: string) => {
   const now = new Date();
@@ -36,13 +37,6 @@ const filePeriod = () => {
   return `${from}_${to}`;
 };
 
-const responseRows = (response: any): any[] => [
-  response?.data?.data?.items,
-  response?.data?.items,
-  response?.data?.data?.data?.items,
-  response?.data?.records?.items,
-].find(Array.isArray) ?? [];
-
 const csvCell = (value: unknown) => {
   let text = value == null ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
   if (/^[=+\-@]/.test(text)) text = `'${text}`;
@@ -60,16 +54,41 @@ const downloadBlob = (blob: Blob, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-export const downloadAnalyticsCsv = async () => {
-  const { from, to } = periodBounds(selectedPeriod());
-  const payload = { date_from: from, date_to: to, all: true, max_all: 20000 };
-  const tableNames = ['sections', 'articles', 'registrations', 'actions'] as const;
-  const responses = await Promise.all(
-    tableNames.map((table) => api.post(`/analytics/table/${table}`, payload)),
-  );
-  const records = responses.flatMap((response, index) =>
-    responseRows(response).map((row) => ({ tabla: tableNames[index], ...row })),
-  );
+const TABLE_LABELS: Record<string, string> = {
+  activeUsersChart: 'usuarios_activos_por_dia',
+  registrationsChart: 'nuevos_registros_por_dia',
+  articleViewsChart: 'articulo_mas_visto_por_dia',
+  articleRanking: 'articulos_mas_vistos',
+  durationRanking: 'duracion_promedio_por_articulo',
+  userDurationRanking: 'tiempo_promedio_por_usuario',
+  actionsChart: 'interacciones_en_articulos',
+  dailyRegistrations: 'nuevos_usuarios_por_dia',
+  dailyActive: 'usuarios_activos_por_dia',
+  sectionRanking: 'secciones_mas_vistas_y_tiempo_promedio',
+  articleUsers: 'usuarios_con_mas_lecturas',
+  interactionUsers: 'usuarios_con_mas_interacciones',
+  banks: 'banca_mas_activa',
+  activityMap: 'mapa_de_actividad',
+  viewRanking: 'ranking_de_visualizaciones',
+  interactionRanking: 'ranking_de_interacciones',
+  dailyComparison: 'comparacion_diaria',
+  traffic: 'trafico',
+};
+
+export const downloadAnalyticsCsv = async (pageName: string, data: any) => {
+  if (!data) throw new Error('Los datos todavía no están disponibles');
+  const records: Array<Record<string, any>> = [];
+  Object.entries(data.metrics ?? {}).forEach(([metric, value]) => {
+    records.push({ pagina: pageName, tabla_funcional: 'metricas', metrica: metric, valor: value });
+  });
+  Object.entries(data).forEach(([key, value]) => {
+    if (!Array.isArray(value) || value.length === 0 || typeof value[0] !== 'object') return;
+    value.forEach((row) => records.push({
+      pagina: pageName,
+      tabla_funcional: TABLE_LABELS[key] || key,
+      ...row,
+    }));
+  });
   const columns = [...new Set(records.flatMap((row) => Object.keys(row)))];
   const csv = [
     columns.map(csvCell).join(','),
@@ -77,7 +96,7 @@ export const downloadAnalyticsCsv = async () => {
   ].join('\r\n');
   downloadBlob(
     new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }),
-    `datos-analytics-${filePeriod()}.csv`,
+    `datos-${pageName}-${filePeriod()}.csv`,
   );
 };
 
@@ -85,10 +104,6 @@ export const downloadDashboardPdf = async (pageName: string) => {
   const target = document.querySelector<HTMLElement>('[data-dashboard-export]');
   if (!target) throw new Error('No se encontró el contenido del dashboard');
 
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import('html2canvas'),
-    import('jspdf'),
-  ]);
   const canvas = await html2canvas(target, {
     backgroundColor: '#f7f8fa',
     scale: Math.min(window.devicePixelRatio || 1, 2),

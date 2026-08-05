@@ -6,12 +6,14 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { downloadAnalyticsCsv, downloadDashboardPdf } from '@/lib/downloadDashboard';
+import { useDashboardExport } from './DashboardExportContext';
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 type TopbarProps = { currentPath?: string; onMenuClick?: () => void };
 
 export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }) => {
+  const { exportData } = useDashboardExport();
   const now = new Date();
   const defaultValue = `month:${now.getFullYear()}:${now.getMonth()}`;
   const [period, setPeriod] = useState(() => {
@@ -54,9 +56,10 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
     setDownloading(type);
     try {
       if (type === 'pdf') await downloadDashboardPdf(pageName);
-      else await downloadAnalyticsCsv();
-    } catch {
-      setDownloadError('No se pudo generar la descarga. Inténtalo nuevamente.');
+      else await downloadAnalyticsCsv(pageName, exportData);
+    } catch (error) {
+      console.error('Error al generar la descarga:', error);
+      setDownloadError(error instanceof Error ? error.message : 'No se pudo generar la descarga. Inténtalo nuevamente.');
     } finally {
       setDownloading(null);
     }

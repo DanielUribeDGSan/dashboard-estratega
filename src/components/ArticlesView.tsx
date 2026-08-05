@@ -7,6 +7,7 @@ import { BookOpen, Eye, MousePointerClick, Route, X } from 'lucide-react';
 import { Card } from './ui/Card';
 import { ARTICLE_ACTION_LABELS, useArticlesData } from '../hooks/useArticlesData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
+import { useRegisterDashboardExport } from './layout/DashboardExportContext';
 
 const shortDate = (value: string) => {
   const date = new Date(`${value}T12:00:00`);
@@ -43,6 +44,7 @@ const ChartCard = ({ title, subtitle, children, className = '' }: any) => <Card 
 
 export const ArticlesView: React.FC = () => {
   const { loading, error, data } = useArticlesData();
+  useRegisterDashboardExport(data);
   const [detail, setDetail] = useState<any>(null);
   const labelWidth = useChartLabelWidth(420, 260, 105);
   if (loading) return <div className="grid min-h-[65vh] place-items-center text-[#001391]">Preparando artículos…</div>;

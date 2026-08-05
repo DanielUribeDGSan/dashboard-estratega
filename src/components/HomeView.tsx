@@ -7,6 +7,7 @@ import { BookOpen, CalendarDays, Clock3, MousePointerClick, TrendingUp, Users, X
 import { Card } from './ui/Card';
 import { ACTION_TRANSLATIONS, useHomeData } from '../hooks/useHomeData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
+import { useRegisterDashboardExport } from './layout/DashboardExportContext';
 
 const COLORS = ['#001391', '#0c6dff', '#2dcccd', '#f8b500', '#7a4ce0', '#f35b74', '#00a86b', '#64748b'];
 const shortDate = (value: unknown) => {
@@ -100,6 +101,7 @@ const ChartCard = ({ title, subtitle, children, className = '' }: any) => (
 
 export const HomeView: React.FC = () => {
   const { loading, error, data } = useHomeData();
+  useRegisterDashboardExport(data);
   const [detail, setDetail] = useState<any>(null);
   const articleLabelWidth = useChartLabelWidth(155, 130, 88);
   const actionLabels = data?.actionKeys?.map((key: string) => ({ key, label: ACTION_TRANSLATIONS[key] || key })) ?? [];

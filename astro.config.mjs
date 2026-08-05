@@ -24,6 +24,9 @@ export default defineConfig({
 
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: ['html2canvas-pro', 'jspdf']
+    },
     server: {
       proxy: {
         '/.netlify/functions/analytics': {

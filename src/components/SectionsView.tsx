@@ -4,6 +4,7 @@ import { Eye, LayoutDashboard, MousePointerClick, Route, X } from 'lucide-react'
 import { Card } from './ui/Card';
 import { useSectionsData } from '../hooks/useSectionsData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
+import { useRegisterDashboardExport } from './layout/DashboardExportContext';
 
 const shortDate = (value: string) => {
   const date = new Date(`${value}T12:00:00`);
@@ -23,6 +24,7 @@ const ChartCard = ({ title, subtitle, children, className = '' }: any) => <Card 
 
 export const SectionsView: React.FC = () => {
   const { loading, error, data } = useSectionsData();
+  useRegisterDashboardExport(data);
   const [detail, setDetail] = useState<any>(null);
   const labelWidth = useChartLabelWidth(420, 260, 105);
   if (loading) return <div className="grid min-h-[65vh] place-items-center text-[#001391]">Preparando secciones…</div>;

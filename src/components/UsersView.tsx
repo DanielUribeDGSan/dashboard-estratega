@@ -6,6 +6,7 @@ import { Building2, Clock3, UserPlus, Users, X } from 'lucide-react';
 import { Card } from './ui/Card';
 import { useUsersData } from '../hooks/useUsersData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
+import { useRegisterDashboardExport } from './layout/DashboardExportContext';
 
 const COLORS = ['#001391', '#0c6dff', '#2dcccd', '#7a4ce0', '#f8b500'];
 const shortDate = (value: string) => {
@@ -43,6 +44,7 @@ const ChartCard = ({ title, subtitle, children, className = '' }: any) => <Card 
 
 export const UsersView: React.FC = () => {
   const { loading, error, data } = useUsersData();
+  useRegisterDashboardExport(data);
   const [detail, setDetail] = useState<any>(null);
   const sectionLabelWidth = useChartLabelWidth(260, 210, 105);
   const activityLabelWidth = useChartLabelWidth(170, 145, 90);

@@ -2,6 +2,7 @@ import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { DashboardExportProvider } from './DashboardExportContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,7 +12,7 @@ interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, currentPath = '/' }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   return (
-    <div className="min-h-screen bg-background flex w-full">
+    <DashboardExportProvider><div className="min-h-screen bg-background flex w-full">
       <Sidebar currentPath={currentPath} />
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="w-[min(19rem,85vw)] border-0 p-0">
@@ -27,6 +28,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, curr
           </div>
         </main>
       </div>
-    </div>
+    </div></DashboardExportProvider>
   );
 };
