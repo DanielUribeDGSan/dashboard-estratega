@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { CalendarDays, ChevronsUpDown, ExternalLink, Menu, Users } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronsUpDown, Download, ExternalLink, FileSpreadsheet, FileText, LoaderCircle, Menu, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { downloadAnalyticsCsv, downloadDashboardPdf } from '@/lib/downloadDashboard';
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -18,6 +19,9 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
     return new URLSearchParams(window.location.search).get('period') || defaultValue;
   });
   const [periodOpen, setPeriodOpen] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloading, setDownloading] = useState<'pdf' | 'csv' | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   const options = useMemo(() => {
     const values: Array<{ value: string; label: string }> = [];
@@ -42,6 +46,21 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
     window.location.assign(url.toString());
   };
   const selectedLabel = options.find((option) => option.value === period)?.label ?? 'Seleccionar periodo';
+  const pageName = currentPath === '/articles' ? 'articulos' : currentPath === '/sections' ? 'secciones' : currentPath === '/users' ? 'usuarios' : 'home';
+
+  const runDownload = async (type: 'pdf' | 'csv') => {
+    setDownloadOpen(false);
+    setDownloadError('');
+    setDownloading(type);
+    try {
+      if (type === 'pdf') await downloadDashboardPdf(pageName);
+      else await downloadAnalyticsCsv();
+    } catch {
+      setDownloadError('No se pudo generar la descarga. Inténtalo nuevamente.');
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-20 flex min-h-16 w-full items-center gap-2 bg-background px-4 py-3 sm:gap-4 sm:px-6 lg:min-h-20 lg:px-8">
@@ -105,7 +124,35 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
           <span className="hidden sm:inline">Dashboard de usuarios</span>
           <ExternalLink className="hidden size-3.5 text-slate-400 md:block" />
         </a>
+        <Popover open={downloadOpen} onOpenChange={setDownloadOpen}>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="ghost"
+                aria-label="Abrir opciones de descarga"
+                disabled={downloading !== null}
+                className="h-10 shrink-0 gap-2 rounded-lg border-0 bg-white px-3 text-xs font-semibold text-[#001391] shadow-sm hover:bg-blue-50 sm:px-4 sm:text-sm"
+              />
+            }
+          >
+            {downloading ? <LoaderCircle className="size-4 animate-spin text-[#0c6dff]" /> : <Download className="size-4 text-[#0c6dff]" />}
+            <span className="hidden md:inline">{downloading ? 'Generando…' : 'Descargar'}</span>
+            <ChevronDown className="hidden size-3.5 text-slate-400 sm:block" />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 rounded-xl border-0 p-2 shadow-xl">
+            <button type="button" onClick={() => runDownload('pdf')} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-blue-50">
+              <FileText className="mt-0.5 size-5 shrink-0 text-red-500" />
+              <span><b className="block text-sm text-slate-800">Descargar PDF</b><small className="text-xs text-slate-500">Vista completa con gráficas</small></span>
+            </button>
+            <button type="button" onClick={() => runDownload('csv')} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-emerald-50">
+              <FileSpreadsheet className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+              <span><b className="block text-sm text-slate-800">Descargar CSV</b><small className="text-xs text-slate-500">Datos completos de las tablas</small></span>
+            </button>
+          </PopoverContent>
+        </Popover>
       </div>
+
+      {downloadError && <p className="absolute right-4 top-16 z-30 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 shadow-sm sm:right-6 lg:right-8">{downloadError}</p>}
 
     </header>
   );
