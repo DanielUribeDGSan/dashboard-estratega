@@ -25,7 +25,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindcss()],
     optimizeDeps: {
-      include: ['html2canvas-pro', 'jspdf']
+      include: ['html2canvas-pro', 'jspdf', 'xlsx']
     },
     server: {
       proxy: {

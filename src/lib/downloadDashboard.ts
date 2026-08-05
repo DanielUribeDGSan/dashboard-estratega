@@ -1,5 +1,6 @@
 import html2canvas from 'html2canvas-pro';
 import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 
 const periodBounds = (period: string) => {
   const now = new Date();
@@ -37,67 +38,85 @@ const filePeriod = () => {
   return `${from}_${to}`;
 };
 
-const csvCell = (value: unknown) => {
-  let text = value == null ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
-  if (/^[=+\-@]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
+type SheetDefinition = { key: string; name: string; fields?: Record<string, string> };
+
+const SHEETS_BY_PAGE: Record<string, SheetDefinition[]> = {
+  home: [
+    { key: 'activeUsersChart', name: 'Usuarios activos', fields: { date: 'Fecha', value: 'Usuarios activos', users: 'Usuarios' } },
+    { key: 'articleRanking', name: 'Artículos más vistos', fields: { title: 'Artículo', views: 'Visualizaciones', average: 'Promedio segundos', users: 'Usuarios' } },
+    { key: 'userDurationRanking', name: 'Promedio por usuario', fields: { phone: 'Teléfono', code: 'Banca', average: 'Promedio segundos' } },
+    { key: 'durationRanking', name: 'Promedio por artículo', fields: { title: 'Artículo', average: 'Promedio segundos', views: 'Visualizaciones', users: 'Usuarios' } },
+    { key: 'articleViewsChart', name: 'Artículo más visto', fields: { date: 'Fecha', value: 'Visualizaciones', articles: 'Artículos' } },
+    { key: 'registrationsChart', name: 'Nuevos registros', fields: { date: 'Fecha', value: 'Registros', users: 'Usuarios' } },
+    { key: 'actionsChart', name: 'Interacciones artículos' },
+  ],
+  usuarios: [
+    { key: 'dailyRegistrations', name: 'Nuevos usuarios', fields: { date: 'Fecha', value: 'Registros', users: 'Usuarios' } },
+    { key: 'dailyActive', name: 'Usuarios activos', fields: { date: 'Fecha', value: 'Usuarios activos', users: 'Usuarios' } },
+    { key: 'sectionRanking', name: 'Secciones más vistas', fields: { name: 'Sección', views: 'Visitas', users: 'Usuarios' } },
+    { key: 'sectionRanking', name: 'Promedio por sección', fields: { name: 'Sección', average: 'Promedio segundos', users: 'Usuarios' } },
+    { key: 'articleUsers', name: 'Usuarios con lecturas', fields: { phone: 'Teléfono', code: 'Banca', views: 'Artículos vistos' } },
+    { key: 'interactionUsers', name: 'Más interacciones', fields: { phone: 'Teléfono', code: 'Banca', interactions: 'Interacciones' } },
+    { key: 'banks', name: 'Banca más activa', fields: { code: 'Banca', events: 'Eventos', users: 'Usuarios únicos' } },
+    { key: 'activityMap', name: 'Mapa de actividad', fields: { name: 'Contenido', type: 'Tipo', value: 'Movimientos' } },
+  ],
+  articulos: [
+    { key: 'viewRanking', name: 'Artículos más vistos', fields: { title: 'Artículo', views: 'Visualizaciones', users: 'Usuarios' } },
+    { key: 'interactionRanking', name: 'Interacciones artículo', fields: { title: 'Artículo', interactions: 'Interacciones', users: 'Usuarios' } },
+    { key: 'dailyComparison', name: 'Interacciones vs vistas', fields: { date: 'Fecha', views: 'Visualizaciones', interactions: 'Interacciones' } },
+    { key: 'traffic', name: 'Tráfico en artículos', fields: { source: 'Origen', views: 'Visualizaciones' } },
+  ],
+  secciones: [
+    { key: 'viewRanking', name: 'Secciones más vistas', fields: { name: 'Sección', views: 'Visualizaciones', users: 'Usuarios' } },
+    { key: 'interactionRanking', name: 'Interacciones sección', fields: { name: 'Sección', interactions: 'Interacciones', users: 'Usuarios' } },
+    { key: 'dailyComparison', name: 'Interacciones vs visitas', fields: { date: 'Fecha', views: 'Visitas', interactions: 'Interacciones' } },
+    { key: 'traffic', name: 'Tráfico en secciones', fields: { route: 'Ruta', views: 'Visitas' } },
+  ],
 };
 
-const downloadBlob = (blob: Blob, filename: string) => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+const readableValue = (value: unknown): string | number | boolean => {
+  if (value == null) return '';
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      if (typeof item !== 'object' || item == null) return String(item);
+      if ('phone' in item || 'code' in item) return `${item.phone || 'Sin teléfono'} (${item.code || 'Sin banca'})`;
+      if ('title' in item) return `${item.title}${item.views == null ? '' : ` (${item.views})`}`;
+      return Object.values(item).join(' · ');
+    }).join('; ');
+  }
+  if (typeof value === 'object') return JSON.stringify(value);
+  if (typeof value === 'string' && /^[=+\-@]/.test(value)) return `'${value}`;
+  return value;
 };
 
-const TABLE_LABELS: Record<string, string> = {
-  activeUsersChart: 'usuarios_activos_por_dia',
-  registrationsChart: 'nuevos_registros_por_dia',
-  articleViewsChart: 'articulo_mas_visto_por_dia',
-  articleRanking: 'articulos_mas_vistos',
-  durationRanking: 'duracion_promedio_por_articulo',
-  userDurationRanking: 'tiempo_promedio_por_usuario',
-  actionsChart: 'interacciones_en_articulos',
-  dailyRegistrations: 'nuevos_usuarios_por_dia',
-  dailyActive: 'usuarios_activos_por_dia',
-  sectionRanking: 'secciones_mas_vistas_y_tiempo_promedio',
-  articleUsers: 'usuarios_con_mas_lecturas',
-  interactionUsers: 'usuarios_con_mas_interacciones',
-  banks: 'banca_mas_activa',
-  activityMap: 'mapa_de_actividad',
-  viewRanking: 'ranking_de_visualizaciones',
-  interactionRanking: 'ranking_de_interacciones',
-  dailyComparison: 'comparacion_diaria',
-  traffic: 'trafico',
-};
+const rowsForSheet = (rows: any[], fields?: Record<string, string>) => rows.map((row) => {
+  const entries = fields
+    ? Object.entries(fields).map(([field, label]) => [label, readableValue(row[field])])
+    : Object.entries(row)
+      .filter(([field]) => field !== 'actions' && field !== 'users' && field !== 'articles')
+      .map(([field, value]) => [field, readableValue(value)]);
+  return Object.fromEntries(entries);
+});
 
-export const downloadAnalyticsCsv = async (pageName: string, data: any) => {
+export const downloadAnalyticsWorkbook = async (pageName: string, data: any) => {
   if (!data) throw new Error('Los datos todavía no están disponibles');
-  const records: Array<Record<string, any>> = [];
-  Object.entries(data.metrics ?? {}).forEach(([metric, value]) => {
-    records.push({ pagina: pageName, tabla_funcional: 'metricas', metrica: metric, valor: value });
-  });
-  Object.entries(data).forEach(([key, value]) => {
-    if (!Array.isArray(value) || value.length === 0 || typeof value[0] !== 'object') return;
-    value.forEach((row) => records.push({
-      pagina: pageName,
-      tabla_funcional: TABLE_LABELS[key] || key,
-      ...row,
+  const workbook = XLSX.utils.book_new();
+  const definitions = SHEETS_BY_PAGE[pageName] ?? [];
+
+  definitions.forEach((definition) => {
+    const sourceRows = Array.isArray(data[definition.key]) ? data[definition.key] : [];
+    const rows = rowsForSheet(sourceRows, definition.fields);
+    const worksheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Información: 'No hay datos para este periodo' }]);
+    const headers = rows.length ? Object.keys(rows[0]) : ['Información'];
+    worksheet['!cols'] = headers.map((header) => ({
+      wch: Math.min(55, Math.max(header.length + 2, ...rows.slice(0, 200).map((row) => String(row[header] ?? '').length + 2))),
     }));
+    if (rows.length) worksheet['!autofilter'] = { ref: worksheet['!ref']! };
+    XLSX.utils.book_append_sheet(workbook, worksheet, definition.name.slice(0, 31));
   });
-  const columns = [...new Set(records.flatMap((row) => Object.keys(row)))];
-  const csv = [
-    columns.map(csvCell).join(','),
-    ...records.map((row) => columns.map((column) => csvCell(row[column])).join(',')),
-  ].join('\r\n');
-  downloadBlob(
-    new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }),
-    `datos-${pageName}-${filePeriod()}.csv`,
-  );
+
+  if (workbook.SheetNames.length === 0) throw new Error('No hay tablas disponibles para exportar');
+  XLSX.writeFile(workbook, `datos-${pageName}-${filePeriod()}.xlsx`, { compression: true });
 };
 
 export const downloadDashboardPdf = async (pageName: string) => {

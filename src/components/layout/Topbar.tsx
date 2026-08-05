@@ -5,7 +5,7 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { downloadAnalyticsCsv, downloadDashboardPdf } from '@/lib/downloadDashboard';
+import { downloadAnalyticsWorkbook, downloadDashboardPdf } from '@/lib/downloadDashboard';
 import { useDashboardExport } from './DashboardExportContext';
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -22,7 +22,7 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
   });
   const [periodOpen, setPeriodOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [downloading, setDownloading] = useState<'pdf' | 'csv' | null>(null);
+  const [downloading, setDownloading] = useState<'pdf' | 'xlsx' | null>(null);
   const [downloadError, setDownloadError] = useState('');
 
   const options = useMemo(() => {
@@ -50,13 +50,13 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
   const selectedLabel = options.find((option) => option.value === period)?.label ?? 'Seleccionar periodo';
   const pageName = currentPath === '/articles' ? 'articulos' : currentPath === '/sections' ? 'secciones' : currentPath === '/users' ? 'usuarios' : 'home';
 
-  const runDownload = async (type: 'pdf' | 'csv') => {
+  const runDownload = async (type: 'pdf' | 'xlsx') => {
     setDownloadOpen(false);
     setDownloadError('');
     setDownloading(type);
     try {
       if (type === 'pdf') await downloadDashboardPdf(pageName);
-      else await downloadAnalyticsCsv(pageName, exportData);
+      else await downloadAnalyticsWorkbook(pageName, exportData);
     } catch (error) {
       console.error('Error al generar la descarga:', error);
       setDownloadError(error instanceof Error ? error.message : 'No se pudo generar la descarga. Inténtalo nuevamente.');
@@ -147,9 +147,9 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
               <FileText className="mt-0.5 size-5 shrink-0 text-red-500" />
               <span><b className="block text-sm text-slate-800">Descargar PDF</b><small className="text-xs text-slate-500">Vista completa con gráficas</small></span>
             </button>
-            <button type="button" onClick={() => runDownload('csv')} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-emerald-50">
+            <button type="button" onClick={() => runDownload('xlsx')} className="flex w-full items-start gap-3 rounded-lg p-3 text-left transition hover:bg-emerald-50">
               <FileSpreadsheet className="mt-0.5 size-5 shrink-0 text-emerald-600" />
-              <span><b className="block text-sm text-slate-800">Descargar CSV</b><small className="text-xs text-slate-500">Datos completos de las tablas</small></span>
+              <span><b className="block text-sm text-slate-800">Descargar Excel</b><small className="text-xs text-slate-500">Una pestaña por cada gráfica</small></span>
             </button>
           </PopoverContent>
         </Popover>
