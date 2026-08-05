@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CalendarDays, ChevronsUpDown, ExternalLink, Menu, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -7,14 +7,16 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const STORAGE_KEY = 'analytics-selected-period';
 
 type TopbarProps = { currentPath?: string; onMenuClick?: () => void };
 
 export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }) => {
   const now = new Date();
   const defaultValue = `month:${now.getFullYear()}:${now.getMonth()}`;
-  const [period, setPeriod] = useState(defaultValue);
+  const [period, setPeriod] = useState(() => {
+    if (typeof window === 'undefined') return defaultValue;
+    return new URLSearchParams(window.location.search).get('period') || defaultValue;
+  });
   const [periodOpen, setPeriodOpen] = useState(false);
 
   const options = useMemo(() => {
@@ -32,18 +34,9 @@ export const Topbar: React.FC<TopbarProps> = ({ currentPath = '/', onMenuClick }
     return values;
   }, []);
 
-  useEffect(() => {
-    const selected = new URLSearchParams(window.location.search).get('period')
-      || window.localStorage.getItem(STORAGE_KEY);
-    if (!selected || selected === defaultValue) return;
-    const timer = window.setTimeout(() => setPeriod(selected), 0);
-    return () => window.clearTimeout(timer);
-  }, [defaultValue]);
-
   const changePeriod = (value: string) => {
     setPeriodOpen(false);
     setPeriod(value);
-    window.localStorage.setItem(STORAGE_KEY, value);
     const url = new URL(window.location.href);
     url.searchParams.set('period', value);
     window.location.assign(url.toString());

@@ -15,6 +15,8 @@ const navItems = [
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = false }) => {
+  const periodSearch = typeof window === 'undefined' ? '' : window.location.search;
+
   return (
     <aside className={mobile ? "flex h-full w-full flex-col bg-white p-5" : "fixed left-0 top-0 z-20 hidden h-screen w-20 flex-col items-center border-r border-gray-100 bg-white py-6 shadow-sm lg:flex"}>
       <div className={mobile ? "mb-8 flex items-center gap-3" : "mb-12"}>
@@ -31,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = fa
           return (
             <a
               key={item.path}
-              href={item.path}
+              href={`${item.path}${periodSearch}`}
               className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl transition-all duration-300 ${
                 isActive
                   ? 'bg-secondary text-white shadow-md shadow-secondary/30'
@@ -47,6 +49,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = fa
       </nav>
 
       <div className={mobile ? "mt-auto flex w-full flex-col gap-2" : "mt-auto flex w-full flex-col gap-6 px-4"}>
+        <button className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}>
+          <HelpCircle className="w-5 h-5" />
+          {mobile && <span>Ayuda</span>}
+        </button>
         <button
           onClick={() => {
             window.localStorage.removeItem('site_access_granted');
@@ -54,10 +60,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPath = '/', mobile = fa
           }}
           className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}
         >
-          <HelpCircle className="w-5 h-5" />
-          {mobile && <span>Ayuda</span>}
-        </button>
-        <button className={`flex items-center ${mobile ? 'h-12 justify-start gap-3 px-4' : 'aspect-square justify-center'} w-full rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-700 transition-all`}>
           <LogOut className="w-5 h-5" />
           {mobile && <span>Cerrar sesión</span>}
         </button>

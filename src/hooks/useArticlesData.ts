@@ -53,9 +53,7 @@ export const useArticlesData = () => {
   const [period] = useState(() => {
     const fallback = `month:${now.getFullYear()}:${now.getMonth()}`;
     if (typeof window === 'undefined') return fallback;
-    return new URLSearchParams(window.location.search).get('period')
-      || window.localStorage.getItem('analytics-selected-period')
-      || fallback;
+    return new URLSearchParams(window.location.search).get('period') || fallback;
   });
   const [state, setState] = useState<any>({ loading: true, error: '', data: null });
 
