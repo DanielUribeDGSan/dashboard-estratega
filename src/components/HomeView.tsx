@@ -3,7 +3,7 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { BookOpen, CalendarDays, Clock3, MousePointerClick, TrendingUp, Users, X } from 'lucide-react';
+import { BellRing, BookOpen, CalendarDays, Clock3, MousePointerClick, TrendingUp, Users, X } from 'lucide-react';
 import { Card } from './ui/Card';
 import { ACTION_TRANSLATIONS, useHomeData } from '../hooks/useHomeData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
@@ -54,6 +54,16 @@ const TooltipBox = ({ active, payload, label, kind }: any) => {
         </>
       )}
       {kind === 'registrations' && <p className="text-xs text-slate-600">{point.value} registros nuevos</p>}
+      {kind === 'notifications' && <>
+        <p className="text-xs text-slate-500">{point.value} usuarios únicos · {point.opens} aperturas</p>
+        <div className="mt-2 max-h-32 space-y-1 overflow-auto">
+          {point.users?.slice(0, 8).map((user: any, index: number) => (
+            <p key={`${user.phone}-${index}`} className="flex justify-between gap-5 text-xs">
+              <span className="font-semibold text-[#f35b74]">{user.code}</span><span>{user.phone}</span>
+            </p>
+          ))}
+        </div>
+      </>}
       {kind === 'duration' && <p className="text-xs text-slate-600">Promedio: <b>{seconds(point.average)}</b></p>}
       {kind === 'ranking' && <p className="text-xs text-slate-600">Visualizaciones: <b>{point.views}</b></p>}
       {kind === 'actions' && (
@@ -118,6 +128,7 @@ export const HomeView: React.FC = () => {
     data.metrics.activeUsers > 0 ||
     data.metrics.registrations > 0 ||
     data.metrics.interactions > 0 ||
+    data.metrics.notificationOpens > 0 ||
     data.articleRanking.length > 0;
   const periodName = data.period.mode === 'year' ? 'este año' : 'este mes';
 
@@ -125,7 +136,7 @@ export const HomeView: React.FC = () => {
     <div className="space-y-6 pb-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div><h1 className="text-2xl font-semibold text-[#001391]">Resumen del {data.period.mode === 'year' ? 'año' : 'mes'}</h1><p className="mt-1 text-sm text-slate-500">Actividad del {shortDate(data.period.from)} al {shortDate(data.period.to)}</p></div>
-        <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-[#0c6dff]">Datos en vivo · 4 tablas</span>
+        <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-[#0c6dff]">Datos en vivo · 5 tablas</span>
       </div>
 
       {!hasInformation ? (
@@ -137,13 +148,14 @@ export const HomeView: React.FC = () => {
           </div>
         </Card>
       ) : <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
         {[
           ['Usuarios activos', data.metrics.activeUsers, 'Personas únicas con actividad', Users, '#001391'],
           ['Nuevos registros', data.metrics.registrations, 'Altas durante el periodo', TrendingUp, '#00a86b'],
           ['Interacciones', data.metrics.interactions, 'Acciones dentro de artículos', MousePointerClick, '#0c6dff'],
           ['Duración prom. artículo', seconds(data.metrics.averageArticleDuration), 'Promedio general de lectura', Clock3, '#7a4ce0'],
           ['Artículo más visto', data.metrics.topArticle?.views ?? 0, data.metrics.topArticle?.title ?? 'Sin visualizaciones', BookOpen, '#f8b500'],
+          ['Abrieron notificaciones', data.metrics.notificationUsers, `${data.metrics.notificationOpens.toLocaleString('es-MX')} aperturas en el periodo`, BellRing, '#f35b74'],
         ].map(([label, value, caption, Icon, color]: any) => (
           <Card key={label} className="min-h-[150px]">
             <div className="flex items-start justify-between gap-3"><p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</p><span className="rounded-xl p-2" style={{ background: `${color}12`, color }}><Icon size={18} /></span></div>
@@ -237,6 +249,19 @@ export const HomeView: React.FC = () => {
               <Tooltip content={<TooltipBox kind="users" />} />
               <Bar dataKey="value" fill="#00a86b" radius={[6, 6, 0, 0]} />
             </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard className="xl:col-span-12 min-h-[440px]" title="Usuarios que abrieron notificaciones" subtitle="Evolución diaria de usuarios únicos; pasa el cursor o haz clic para ver teléfono y banca.">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data.notificationOpensChart} margin={{ top: 10, right: 15, left: -10, bottom: 5 }} onClick={(state: any) => clickUsers(state?.activePayload?.[0]?.payload, 'Aperturas de notificaciones')}>
+              <defs><linearGradient id="notificationGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f35b74" stopOpacity=".3" /><stop offset="1" stopColor="#f35b74" stopOpacity=".02" /></linearGradient></defs>
+              <CartesianGrid vertical={false} stroke="#eef1f6" strokeDasharray="3 5" />
+              <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={20} axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<TooltipBox kind="notifications" />} />
+              <Area dataKey="value" type="monotone" fill="url(#notificationGradient)" stroke="#f35b74" strokeWidth={3} activeDot={{ r: 6, cursor: 'pointer' }} />
+            </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
 

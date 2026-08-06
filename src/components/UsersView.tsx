@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { Building2, Clock3, UserPlus, Users, X } from 'lucide-react';
+import { BellRing, Building2, Clock3, UserPlus, Users, X } from 'lucide-react';
 import { Card } from './ui/Card';
 import { useUsersData } from '../hooks/useUsersData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
@@ -56,12 +56,13 @@ export const UsersView: React.FC = () => {
   return <div className="space-y-6 pb-8">
     <div><h1 className="text-2xl font-semibold text-[#001391]">Análisis de usuarios</h1><p className="mt-1 text-sm text-slate-500">Actividad del {shortDate(data.period.from)} al {shortDate(data.period.to)}</p></div>
     {!hasData ? <Card className="grid min-h-[420px] place-items-center text-center"><div><Users className="mx-auto text-blue-200" size={44} /><h2 className="mt-4 text-xl font-semibold text-[#001391]">No hay información de este periodo</h2></div></Card> : <>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {[
           ['Nuevos usuarios', data.metrics.registrations, 'Registros del periodo', UserPlus],
           ['Usuarios activos', data.metrics.activeUsers, 'Personas únicas con actividad', Users],
           ['Tiempo prom. sección', seconds(data.metrics.avgSection), 'Promedio redondeado', Clock3],
           ['Tiempo prom. artículo', seconds(data.metrics.avgArticle), 'Promedio redondeado', Clock3],
+          ['Abrieron notificaciones', data.metrics.notificationUsers, `${data.metrics.notificationOpens.toLocaleString('es-MX')} aperturas`, BellRing],
         ].map(([label, value, caption, Icon]: any) => <Card key={label}><div className="flex justify-between"><p className="text-xs font-bold uppercase text-slate-500">{label}</p><Icon size={18} className="text-[#0c6dff]" /></div><p className="mt-3 text-3xl font-semibold">{typeof value === 'number' ? value.toLocaleString('es-MX') : value}</p><p className="mt-2 text-xs text-slate-500">{caption}</p></Card>)}
       </div>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
@@ -70,6 +71,9 @@ export const UsersView: React.FC = () => {
         </ChartCard>
         <ChartCard className="xl:col-span-6" title="Usuarios activos" subtitle="Personas con actividad diaria; hover o clic para conocer phone y code.">
           <ResponsiveContainer width="100%" height="100%"><AreaChart data={data.dailyActive} onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Usuarios activos')}><CartesianGrid vertical={false} stroke="#eef1f6" /><XAxis dataKey="date" tickFormatter={shortDate} minTickGap={25} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip />} /><Area dataKey="value" type="monotone" stroke="#0c6dff" fill="#dbeafe" strokeWidth={3} /></AreaChart></ResponsiveContainer>
+        </ChartCard>
+        <ChartCard className="xl:col-span-12" title="Usuarios que abrieron notificaciones" subtitle="Usuarios únicos por día; hover o clic para conocer phone, code y total de aperturas.">
+          <ResponsiveContainer width="100%" height="100%"><AreaChart data={data.dailyNotificationOpens} onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Aperturas de notificaciones')}><CartesianGrid vertical={false} stroke="#eef1f6" /><XAxis dataKey="date" tickFormatter={shortDate} minTickGap={25} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip suffix="usuarios únicos" />} /><Area dataKey="value" type="monotone" stroke="#f35b74" fill="#ffe4e9" strokeWidth={3} /></AreaChart></ResponsiveContainer>
         </ChartCard>
         <ChartCard className="xl:col-span-12" title="Secciones más vistas" subtitle="De menor a mayor navegación, con tiempo promedio redondeado y usuarios.">
           <ResponsiveContainer width="100%" height="100%"><BarChart data={data.sectionRanking} layout="vertical" onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Usuarios de la sección')}><XAxis type="number" axisLine={false} tickLine={false} /><YAxis type="category" dataKey="name" width={sectionLabelWidth} tickFormatter={(value) => truncate(value, sectionLabelWidth < 150 ? 14 : 32)} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip suffix="visitas" />} /><Bar dataKey="views" fill="#001391" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer>

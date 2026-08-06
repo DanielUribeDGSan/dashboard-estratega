@@ -49,6 +49,7 @@ const SHEETS_BY_PAGE: Record<string, SheetDefinition[]> = {
     { key: 'articleViewsChart', name: 'Artículo más visto', fields: { date: 'Fecha', value: 'Visualizaciones', articles: 'Artículos' } },
     { key: 'registrationsChart', name: 'Nuevos registros', fields: { date: 'Fecha', value: 'Registros', users: 'Usuarios' } },
     { key: 'actionsChart', name: 'Interacciones artículos' },
+    { key: 'notificationOpensChart', name: 'Aperturas notificaciones', fields: { date: 'Fecha', value: 'Usuarios únicos', opens: 'Aperturas', users: 'Usuarios' } },
   ],
   usuarios: [
     { key: 'dailyRegistrations', name: 'Nuevos usuarios', fields: { date: 'Fecha', value: 'Registros', users: 'Usuarios' } },
@@ -59,6 +60,8 @@ const SHEETS_BY_PAGE: Record<string, SheetDefinition[]> = {
     { key: 'interactionUsers', name: 'Más interacciones', fields: { phone: 'Teléfono', code: 'Banca', interactions: 'Interacciones' } },
     { key: 'banks', name: 'Banca más activa', fields: { code: 'Banca', events: 'Eventos', users: 'Usuarios únicos' } },
     { key: 'activityMap', name: 'Mapa de actividad', fields: { name: 'Contenido', type: 'Tipo', value: 'Movimientos' } },
+    { key: 'dailyNotificationOpens', name: 'Aperturas notificaciones', fields: { date: 'Fecha', value: 'Usuarios únicos', opens: 'Aperturas', users: 'Usuarios' } },
+    { key: 'notificationUsers', name: 'Usuarios notificaciones', fields: { phone: 'Teléfono', code: 'Banca', opens: 'Aperturas' } },
   ],
   articulos: [
     { key: 'viewRanking', name: 'Artículos más vistos', fields: { title: 'Artículo', views: 'Visualizaciones', users: 'Usuarios' } },

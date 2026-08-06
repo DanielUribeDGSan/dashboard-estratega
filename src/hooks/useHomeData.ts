@@ -87,27 +87,29 @@ export const useHomeData = () => {
         const { dateFrom, dateTo, mode } = boundsForPeriod(period);
         const payload = { date_from: dateFrom, date_to: dateTo, all: true, max_all: 20000 };
 
-        const [sectionsResponse, articlesResponse, registrationsResponse, actionsResponse] =
+        const [sectionsResponse, articlesResponse, registrationsResponse, actionsResponse, notificationsResponse] =
           await Promise.all([
             api.post('/analytics/table/sections', payload),
             api.post('/analytics/table/articles', payload),
             api.post('/analytics/table/registrations', payload),
             api.post('/analytics/table/actions', payload),
+            api.post('/analytics/query/notifications', payload),
           ]);
 
         const sections = rows(sectionsResponse);
         const articles = rows(articlesResponse);
         const registrations = rows(registrationsResponse);
         const actions = rows(actionsResponse);
+        const notifications = rows(notificationsResponse);
         const days = monthDays(dateFrom, dateTo);
 
         // Un usuario se considera activo si aparece en cualquier actividad del mes.
-        const activityRows = [...sections, ...articles, ...actions];
+        const activityRows = [...sections, ...articles, ...actions, ...notifications];
         const activeIdentities = new Map<string, Person>();
         const activeByDay = new Map<string, Map<string, Person>>();
         activityRows.forEach((row) => {
           const id = identity(row);
-          const day = datePart(row.entered_at || row.occurred_at || row.created_at);
+          const day = datePart(row.entered_at || row.occurred_at || row.opened_at || row.created_at);
           if (!id || !day) return;
           activeIdentities.set(id, person(row));
           if (!activeByDay.has(day)) activeByDay.set(day, new Map());
@@ -129,6 +131,26 @@ export const useHomeData = () => {
           date,
           value: registrationsByDay.get(date)?.length ?? 0,
           users: registrationsByDay.get(date) ?? [],
+        }));
+
+        const notificationUsers = new Map<string, Person>();
+        const notificationUsersByDay = new Map<string, Map<string, Person>>();
+        const notificationOpensByDay = new Map<string, number>();
+        notifications.forEach((row) => {
+          const id = identity(row);
+          const day = datePart(row.opened_at || row.created_at);
+          if (!day) return;
+          notificationOpensByDay.set(day, (notificationOpensByDay.get(day) ?? 0) + 1);
+          if (!id) return;
+          notificationUsers.set(id, person(row));
+          if (!notificationUsersByDay.has(day)) notificationUsersByDay.set(day, new Map());
+          notificationUsersByDay.get(day)!.set(id, person(row));
+        });
+        const notificationOpensChart = days.map((date) => ({
+          date,
+          value: notificationUsersByDay.get(date)?.size ?? 0,
+          opens: notificationOpensByDay.get(date) ?? 0,
+          users: [...(notificationUsersByDay.get(date)?.values() ?? [])],
         }));
 
         const articleStats = new Map<string, {
@@ -207,6 +229,8 @@ export const useHomeData = () => {
               interactions: actions.length,
               averageArticleDuration: articles.length ? totalArticleDuration / articles.length : 0,
               topArticle: articleRanking.at(-1) ?? null,
+              notificationUsers: notificationUsers.size,
+              notificationOpens: notifications.length,
             },
             activeUsersChart,
             registrationsChart,
@@ -216,6 +240,7 @@ export const useHomeData = () => {
             userDurationRanking,
             actionsChart,
             actionKeys,
+            notificationOpensChart,
           });
           setError('');
         }

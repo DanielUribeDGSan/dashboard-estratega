@@ -54,16 +54,18 @@ export const useUsersData = () => {
         setState((current: any) => ({ ...current, loading: true, error: '' }));
         const periodBounds = bounds(period);
         const payload = { date_from: periodBounds.from, date_to: periodBounds.to, all: true, max_all: 20000 };
-        const [sectionsResponse, articlesResponse, registrationsResponse, actionsResponse] = await Promise.all([
+        const [sectionsResponse, articlesResponse, registrationsResponse, actionsResponse, notificationsResponse] = await Promise.all([
           api.post('/analytics/table/sections', payload),
           api.post('/analytics/table/articles', payload),
           api.post('/analytics/table/registrations', payload),
           api.post('/analytics/table/actions', payload),
+          api.post('/analytics/query/notifications', payload),
         ]);
         const sections = rows(sectionsResponse);
         const articles = rows(articlesResponse);
         const registrations = rows(registrationsResponse);
         const actions = rows(actionsResponse);
+        const notifications = rows(notificationsResponse);
         const days = daysBetween(periodBounds.from, periodBounds.to);
 
         const dailyRegistrations = days.map((date) => {
@@ -71,11 +73,11 @@ export const useUsersData = () => {
           return { date, value: records.length, users: records.map(user) };
         });
 
-        const activity = [...sections, ...articles, ...actions];
+        const activity = [...sections, ...articles, ...actions, ...notifications];
         const allUsers = new Map<string, any>();
         const dailyActive = days.map((date) => {
           const unique = new Map<string, any>();
-          activity.filter((row) => datePart(row.entered_at || row.occurred_at || row.created_at) === date)
+          activity.filter((row) => datePart(row.entered_at || row.occurred_at || row.opened_at || row.created_at) === date)
             .forEach((row) => {
               const id = identity(row);
               if (id) { unique.set(id, user(row)); allUsers.set(id, user(row)); }
@@ -140,6 +142,26 @@ export const useUsersData = () => {
         const interactionUsers = [...interactionUsersMap.values()]
           .sort((a, b) => a.interactions - b.interactions);
 
+        const notificationUserMap = new Map<string, any>();
+        const dailyNotificationOpens = days.map((date) => {
+          const unique = new Map<string, any>();
+          let opens = 0;
+          notifications
+            .filter((row) => datePart(row.opened_at || row.created_at) === date)
+            .forEach((row) => {
+              opens += 1;
+              const id = identity(row);
+              if (!id) return;
+              const person = user(row);
+              unique.set(id, person);
+              const current = notificationUserMap.get(id) ?? { ...person, opens: 0 };
+              current.opens += 1;
+              notificationUserMap.set(id, current);
+            });
+          return { date, value: unique.size, opens, users: [...unique.values()] };
+        });
+        const notificationUsers = [...notificationUserMap.values()].sort((a, b) => a.opens - b.opens);
+
         const activityMap = [
           ...sectionRanking.map((item) => ({ name: item.name, value: item.views, type: 'Sección' })),
           ...[...articleMap].map(([name, value]) => ({ name, value, type: 'Artículo' })),
@@ -151,8 +173,8 @@ export const useUsersData = () => {
         if (mounted) setState({
           loading: false, error: '', data: {
             period: periodBounds,
-            metrics: { registrations: registrations.length, activeUsers: allUsers.size, avgSection, avgArticle },
-            dailyRegistrations, dailyActive, sectionRanking, articleUsers, interactionUsers, banks, activityMap,
+            metrics: { registrations: registrations.length, activeUsers: allUsers.size, avgSection, avgArticle, notificationUsers: notificationUsers.length, notificationOpens: notifications.length },
+            dailyRegistrations, dailyActive, dailyNotificationOpens, notificationUsers, sectionRanking, articleUsers, interactionUsers, banks, activityMap,
           },
         });
       } catch (error: any) {
