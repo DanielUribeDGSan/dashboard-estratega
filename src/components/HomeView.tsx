@@ -64,6 +64,16 @@ const TooltipBox = ({ active, payload, label, kind }: any) => {
           ))}
         </div>
       </>}
+      {kind === 'notificationRanking' && <>
+        <p className="text-xs text-slate-500">{point.opens} aperturas · {point.users?.length ?? 0} usuarios únicos</p>
+        <div className="mt-2 max-h-32 space-y-1 overflow-auto">
+          {point.users?.slice(0, 8).map((user: any, index: number) => (
+            <p key={`${user.phone}-${index}`} className="flex justify-between gap-5 text-xs">
+              <span className="font-semibold text-[#f35b74]">{user.code}</span><span>{user.phone}</span>
+            </p>
+          ))}
+        </div>
+      </>}
       {kind === 'duration' && <p className="text-xs text-slate-600">Promedio: <b>{seconds(point.average)}</b></p>}
       {kind === 'ranking' && <p className="text-xs text-slate-600">Visualizaciones: <b>{point.views}</b></p>}
       {kind === 'actions' && (
@@ -252,16 +262,18 @@ export const HomeView: React.FC = () => {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard className="xl:col-span-12 min-h-[440px]" title="Usuarios que abrieron notificaciones" subtitle="Evolución diaria de usuarios únicos; pasa el cursor o haz clic para ver teléfono y banca.">
+        <ChartCard className="xl:col-span-12 min-h-[440px]" title="Aperturas de notificaciones por artículo" subtitle="Comparación de menor a mayor; pasa el cursor o haz clic para conocer teléfono y banca de quienes la abrieron.">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data.notificationOpensChart} margin={{ top: 10, right: 15, left: -10, bottom: 5 }} onClick={(state: any) => clickUsers(state?.activePayload?.[0]?.payload, 'Aperturas de notificaciones')}>
-              <defs><linearGradient id="notificationGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f35b74" stopOpacity=".3" /><stop offset="1" stopColor="#f35b74" stopOpacity=".02" /></linearGradient></defs>
-              <CartesianGrid vertical={false} stroke="#eef1f6" strokeDasharray="3 5" />
-              <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={20} axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
-              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
-              <Tooltip content={<TooltipBox kind="notifications" />} />
-              <Area dataKey="value" type="monotone" fill="url(#notificationGradient)" stroke="#f35b74" strokeWidth={3} activeDot={{ r: 6, cursor: 'pointer' }} />
-            </AreaChart>
+            <BarChart data={data.notificationRanking} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }} onClick={(state: any) => {
+              const point = state?.activePayload?.[0]?.payload;
+              if (point) setDetail({ eyebrow: 'Notificación de artículo', title: point.title, items: point.users.map((user: any) => ({ label: user.phone, sub: `Banca ${user.code}`, value: 'Abrió la notificación' })) });
+            }}>
+              <CartesianGrid horizontal={false} stroke="#eef1f6" />
+              <XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="title" width={articleLabelWidth} tickFormatter={(value) => truncateLabel(value, articleLabelWidth < 100 ? 12 : 23)} tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+              <Tooltip content={<TooltipBox kind="notificationRanking" />} />
+              <Bar dataKey="opens" fill="#f35b74" radius={[0, 7, 7, 0]} />
+            </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 

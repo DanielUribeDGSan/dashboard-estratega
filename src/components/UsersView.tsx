@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { BellRing, Building2, Clock3, UserPlus, Users, X } from 'lucide-react';
+import { BellRing, Building2, Clock3, Smartphone, UserPlus, Users, X } from 'lucide-react';
 import { Card } from './ui/Card';
 import { useUsersData } from '../hooks/useUsersData';
 import { useChartLabelWidth } from '../hooks/useChartLabelWidth';
@@ -31,6 +31,19 @@ const UsersTooltip = ({ active, payload, label, suffix = 'usuarios' }: any) => {
   </div>;
 };
 
+const PlatformTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  const ordered = [...payload].sort((a: any, b: any) => Number(b.value) - Number(a.value));
+  return <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-xl">
+    <b className="text-[#001391]">{shortDate(String(label))}</b>
+    <div className="mt-2 space-y-1">
+      {ordered.map((item: any) => <p key={item.dataKey} className="flex items-center justify-between gap-5 font-medium" style={{ color: item.color }}>
+        <span>{item.dataKey === 'ios' ? 'iOS' : 'Android'}</span><b>{item.value}</b>
+      </p>)}
+    </div>
+  </div>;
+};
+
 const Detail = ({ detail, close }: any) => detail ? <div className="fixed inset-0 z-50 grid place-items-center bg-[#001391]/25 p-4 backdrop-blur-sm" onClick={close}>
   <div className="max-h-[75vh] w-full max-w-lg overflow-auto rounded-3xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}>
     <div className="mb-4 flex justify-between"><div><p className="text-xs font-bold uppercase text-[#0c6dff]">{detail.label}</p><h2 className="text-xl font-semibold text-[#001391]">{detail.title}</h2></div><button aria-label="Cerrar" onClick={close}><X /></button></div>
@@ -52,17 +65,24 @@ export const UsersView: React.FC = () => {
   if (error || !data) return <Card className="mx-auto mt-20 max-w-xl text-center">{error}</Card>;
   const hasData = data.metrics.registrations + data.metrics.activeUsers + data.activityMap.length > 0;
   const showUsers = (point: any, label: string) => point && setDetail({ label, title: point.date ? shortDate(point.date) : point.name, items: point.users ?? [] });
+  const platformSeries = [
+    { key: 'android', label: 'Android', total: data.metrics.androidUsers, color: '#00a86b', fill: 'url(#androidGradient)' },
+    { key: 'ios', label: 'iOS', total: data.metrics.iosUsers, color: '#0c6dff', fill: 'url(#iosGradient)' },
+  ].sort((a, b) => b.total - a.total);
+  const platformSummary = platformSeries.map((platform) => platform.label).join(' vs ');
+  const platformValues = platformSeries.map((platform) => platform.total.toLocaleString('es-MX')).join(' / ');
 
   return <div className="space-y-6 pb-8">
     <div><h1 className="text-2xl font-semibold text-[#001391]">Análisis de usuarios</h1><p className="mt-1 text-sm text-slate-500">Actividad del {shortDate(data.period.from)} al {shortDate(data.period.to)}</p></div>
     {!hasData ? <Card className="grid min-h-[420px] place-items-center text-center"><div><Users className="mx-auto text-blue-200" size={44} /><h2 className="mt-4 text-xl font-semibold text-[#001391]">No hay información de este periodo</h2></div></Card> : <>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         {[
           ['Nuevos usuarios', data.metrics.registrations, 'Registros del periodo', UserPlus],
           ['Usuarios activos', data.metrics.activeUsers, 'Personas únicas con actividad', Users],
           ['Tiempo prom. sección', seconds(data.metrics.avgSection), 'Promedio redondeado', Clock3],
           ['Tiempo prom. artículo', seconds(data.metrics.avgArticle), 'Promedio redondeado', Clock3],
           ['Abrieron notificaciones', data.metrics.notificationUsers, `${data.metrics.notificationOpens.toLocaleString('es-MX')} aperturas`, BellRing],
+          [platformSummary, platformValues, `Usuarios activos: ${platformSummary.replace(' vs ', ' / ')}`, Smartphone],
         ].map(([label, value, caption, Icon]: any) => <Card key={label}><div className="flex justify-between"><p className="text-xs font-bold uppercase text-slate-500">{label}</p><Icon size={18} className="text-[#0c6dff]" /></div><p className="mt-3 text-3xl font-semibold">{typeof value === 'number' ? value.toLocaleString('es-MX') : value}</p><p className="mt-2 text-xs text-slate-500">{caption}</p></Card>)}
       </div>
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
@@ -72,8 +92,24 @@ export const UsersView: React.FC = () => {
         <ChartCard className="xl:col-span-6" title="Usuarios activos" subtitle="Personas con actividad diaria; hover o clic para conocer phone y code.">
           <ResponsiveContainer width="100%" height="100%"><AreaChart data={data.dailyActive} onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Usuarios activos')}><CartesianGrid vertical={false} stroke="#eef1f6" /><XAxis dataKey="date" tickFormatter={shortDate} minTickGap={25} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip />} /><Area dataKey="value" type="monotone" stroke="#0c6dff" fill="#dbeafe" strokeWidth={3} /></AreaChart></ResponsiveContainer>
         </ChartCard>
-        <ChartCard className="xl:col-span-12" title="Usuarios que abrieron notificaciones" subtitle="Usuarios únicos por día; hover o clic para conocer phone, code y total de aperturas.">
-          <ResponsiveContainer width="100%" height="100%"><AreaChart data={data.dailyNotificationOpens} onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Aperturas de notificaciones')}><CartesianGrid vertical={false} stroke="#eef1f6" /><XAxis dataKey="date" tickFormatter={shortDate} minTickGap={25} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip suffix="usuarios únicos" />} /><Area dataKey="value" type="monotone" stroke="#f35b74" fill="#ffe4e9" strokeWidth={3} /></AreaChart></ResponsiveContainer>
+        <ChartCard className="xl:col-span-12" title={`Usuarios activos: ${platformSummary}`} subtitle="La plataforma con más usuarios en el periodo aparece primero en la leyenda y el detalle.">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data.dailyPlatforms} margin={{ top: 10, right: 15, left: -10, bottom: 5 }}>
+              <defs>
+                <linearGradient id="androidGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#00a86b" stopOpacity=".3" /><stop offset="1" stopColor="#00a86b" stopOpacity=".02" /></linearGradient>
+                <linearGradient id="iosGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0c6dff" stopOpacity=".3" /><stop offset="1" stopColor="#0c6dff" stopOpacity=".02" /></linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="#eef1f6" />
+              <XAxis dataKey="date" tickFormatter={shortDate} minTickGap={25} axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+              <Tooltip content={<PlatformTooltip />} />
+              <Legend content={() => <div className="flex justify-center gap-4 pt-2 text-sm">{platformSeries.map((platform) => <span key={platform.key} className="flex items-center gap-1.5 font-medium" style={{ color: platform.color }}><i className="size-2 rounded-full" style={{ background: platform.color }} />{platform.label}</span>)}</div>} />
+              {platformSeries.map((platform) => <Area key={platform.key} dataKey={platform.key} name={platform.key} type="monotone" stroke={platform.color} fill={platform.fill} strokeWidth={3} />)}
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+        <ChartCard className="xl:col-span-12" title="Aperturas de notificaciones por artículo" subtitle="Comparación de menor a mayor; hover o clic para conocer phone y code de quienes las abrieron.">
+          <ResponsiveContainer width="100%" height="100%"><BarChart data={data.notificationRanking} layout="vertical" onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Usuarios que abrieron la notificación')}><CartesianGrid horizontal={false} stroke="#eef1f6" /><XAxis type="number" allowDecimals={false} axisLine={false} tickLine={false} /><YAxis type="category" dataKey="name" width={sectionLabelWidth} tickFormatter={(value) => truncate(value, sectionLabelWidth < 150 ? 14 : 32)} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip suffix="aperturas" />} /><Bar dataKey="opens" fill="#f35b74" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer>
         </ChartCard>
         <ChartCard className="xl:col-span-12" title="Secciones más vistas" subtitle="De menor a mayor navegación, con tiempo promedio redondeado y usuarios.">
           <ResponsiveContainer width="100%" height="100%"><BarChart data={data.sectionRanking} layout="vertical" onClick={(state: any) => showUsers(state?.activePayload?.[0]?.payload, 'Usuarios de la sección')}><XAxis type="number" axisLine={false} tickLine={false} /><YAxis type="category" dataKey="name" width={sectionLabelWidth} tickFormatter={(value) => truncate(value, sectionLabelWidth < 150 ? 14 : 32)} axisLine={false} tickLine={false} /><Tooltip content={<UsersTooltip suffix="visitas" />} /><Bar dataKey="views" fill="#001391" radius={[0, 6, 6, 0]} /></BarChart></ResponsiveContainer>

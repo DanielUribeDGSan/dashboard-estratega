@@ -75,15 +75,26 @@ export const useUsersData = () => {
 
         const activity = [...sections, ...articles, ...actions, ...notifications];
         const allUsers = new Map<string, any>();
+        const androidUsers = new Set<string>();
+        const iosUsers = new Set<string>();
         const dailyActive = days.map((date) => {
           const unique = new Map<string, any>();
+          const android = new Set<string>();
+          const ios = new Set<string>();
           activity.filter((row) => datePart(row.entered_at || row.occurred_at || row.opened_at || row.created_at) === date)
             .forEach((row) => {
               const id = identity(row);
-              if (id) { unique.set(id, user(row)); allUsers.set(id, user(row)); }
+              if (id) {
+                unique.set(id, user(row));
+                allUsers.set(id, user(row));
+                const platform = String(row.platform || '').toLowerCase();
+                if (platform.includes('android')) { android.add(id); androidUsers.add(id); }
+                if (platform.includes('ios')) { ios.add(id); iosUsers.add(id); }
+              }
             });
-          return { date, value: unique.size, users: [...unique.values()] };
+          return { date, value: unique.size, android: android.size, ios: ios.size, users: [...unique.values()] };
         });
+        const dailyPlatforms = dailyActive.map(({ date, android, ios }) => ({ date, android, ios }));
 
         const sectionMap = new Map<string, any>();
         sections.forEach((row) => {
@@ -143,6 +154,11 @@ export const useUsersData = () => {
           .sort((a, b) => a.interactions - b.interactions);
 
         const notificationUserMap = new Map<string, any>();
+        const notificationArticleMap = new Map<string, any>();
+        const articleTitles = new Map<string, string>();
+        articles.forEach((row) => {
+          if (row.detail_id != null && row.article_title) articleTitles.set(String(row.detail_id), row.article_title);
+        });
         const dailyNotificationOpens = days.map((date) => {
           const unique = new Map<string, any>();
           let opens = 0;
@@ -157,10 +173,23 @@ export const useUsersData = () => {
               const current = notificationUserMap.get(id) ?? { ...person, opens: 0 };
               current.opens += 1;
               notificationUserMap.set(id, current);
+
+              const detailId = row.detail_id == null ? '' : String(row.detail_id);
+              const notificationId = row.notification_id == null ? '' : String(row.notification_id);
+              const key = detailId ? `detail:${detailId}` : `notification:${notificationId || row.id}`;
+              const name = row.article_title || row.notification_title || row.title || articleTitles.get(detailId)
+                || (detailId ? `Artículo ${detailId}` : `Notificación ${notificationId || row.id}`);
+              const article = notificationArticleMap.get(key) ?? { name, opens: 0, users: new Map(), notificationId, detailId };
+              article.opens += 1;
+              article.users.set(id, person);
+              notificationArticleMap.set(key, article);
             });
           return { date, value: unique.size, opens, users: [...unique.values()] };
         });
         const notificationUsers = [...notificationUserMap.values()].sort((a, b) => a.opens - b.opens);
+        const notificationRanking = [...notificationArticleMap.values()]
+          .map((item) => ({ ...item, users: [...item.users.values()] }))
+          .sort((a, b) => a.opens - b.opens);
 
         const activityMap = [
           ...sectionRanking.map((item) => ({ name: item.name, value: item.views, type: 'Sección' })),
@@ -173,8 +202,8 @@ export const useUsersData = () => {
         if (mounted) setState({
           loading: false, error: '', data: {
             period: periodBounds,
-            metrics: { registrations: registrations.length, activeUsers: allUsers.size, avgSection, avgArticle, notificationUsers: notificationUsers.length, notificationOpens: notifications.length },
-            dailyRegistrations, dailyActive, dailyNotificationOpens, notificationUsers, sectionRanking, articleUsers, interactionUsers, banks, activityMap,
+            metrics: { registrations: registrations.length, activeUsers: allUsers.size, avgSection, avgArticle, notificationUsers: notificationUsers.length, notificationOpens: notifications.length, androidUsers: androidUsers.size, iosUsers: iosUsers.size },
+            dailyRegistrations, dailyActive, dailyPlatforms, dailyNotificationOpens, notificationUsers, notificationRanking, sectionRanking, articleUsers, interactionUsers, banks, activityMap,
           },
         });
       } catch (error: any) {

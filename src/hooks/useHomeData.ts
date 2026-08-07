@@ -136,6 +136,11 @@ export const useHomeData = () => {
         const notificationUsers = new Map<string, Person>();
         const notificationUsersByDay = new Map<string, Map<string, Person>>();
         const notificationOpensByDay = new Map<string, number>();
+        const articleTitles = new Map<string, string>();
+        articles.forEach((row) => {
+          if (row.detail_id != null && row.article_title) articleTitles.set(String(row.detail_id), row.article_title);
+        });
+        const notificationStats = new Map<string, { title: string; opens: number; users: Map<string, Person>; notificationId?: string; detailId?: string }>();
         notifications.forEach((row) => {
           const id = identity(row);
           const day = datePart(row.opened_at || row.created_at);
@@ -145,6 +150,16 @@ export const useHomeData = () => {
           notificationUsers.set(id, person(row));
           if (!notificationUsersByDay.has(day)) notificationUsersByDay.set(day, new Map());
           notificationUsersByDay.get(day)!.set(id, person(row));
+
+          const detailId = row.detail_id == null ? '' : String(row.detail_id);
+          const notificationId = row.notification_id == null ? '' : String(row.notification_id);
+          const key = detailId ? `detail:${detailId}` : `notification:${notificationId || row.id}`;
+          const title = row.article_title || row.notification_title || row.title || articleTitles.get(detailId)
+            || (detailId ? `Artículo ${detailId}` : `Notificación ${notificationId || row.id}`);
+          const stat = notificationStats.get(key) ?? { title, opens: 0, users: new Map(), notificationId, detailId };
+          stat.opens += 1;
+          stat.users.set(id, person(row));
+          notificationStats.set(key, stat);
         });
         const notificationOpensChart = days.map((date) => ({
           date,
@@ -152,6 +167,9 @@ export const useHomeData = () => {
           opens: notificationOpensByDay.get(date) ?? 0,
           users: [...(notificationUsersByDay.get(date)?.values() ?? [])],
         }));
+        const notificationRanking = [...notificationStats.values()]
+          .map((stat) => ({ ...stat, users: [...stat.users.values()] }))
+          .sort((a, b) => a.opens - b.opens);
 
         const articleStats = new Map<string, {
           title: string; views: number; duration: number; users: Map<string, Person>;
@@ -241,6 +259,7 @@ export const useHomeData = () => {
             actionsChart,
             actionKeys,
             notificationOpensChart,
+            notificationRanking,
           });
           setError('');
         }

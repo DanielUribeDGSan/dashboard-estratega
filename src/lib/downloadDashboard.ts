@@ -50,10 +50,12 @@ const SHEETS_BY_PAGE: Record<string, SheetDefinition[]> = {
     { key: 'registrationsChart', name: 'Nuevos registros', fields: { date: 'Fecha', value: 'Registros', users: 'Usuarios' } },
     { key: 'actionsChart', name: 'Interacciones artículos' },
     { key: 'notificationOpensChart', name: 'Aperturas notificaciones', fields: { date: 'Fecha', value: 'Usuarios únicos', opens: 'Aperturas', users: 'Usuarios' } },
+    { key: 'notificationRanking', name: 'Notificaciones por artículo', fields: { title: 'Artículo o notificación', opens: 'Aperturas', users: 'Usuarios', detailId: 'ID artículo', notificationId: 'ID notificación' } },
   ],
   usuarios: [
     { key: 'dailyRegistrations', name: 'Nuevos usuarios', fields: { date: 'Fecha', value: 'Registros', users: 'Usuarios' } },
     { key: 'dailyActive', name: 'Usuarios activos', fields: { date: 'Fecha', value: 'Usuarios activos', users: 'Usuarios' } },
+    { key: 'dailyPlatforms', name: 'Android vs iOS', fields: { date: 'Fecha', android: 'Android', ios: 'iOS' } },
     { key: 'sectionRanking', name: 'Secciones más vistas', fields: { name: 'Sección', views: 'Visitas', users: 'Usuarios' } },
     { key: 'sectionRanking', name: 'Promedio por sección', fields: { name: 'Sección', average: 'Promedio segundos', users: 'Usuarios' } },
     { key: 'articleUsers', name: 'Usuarios con lecturas', fields: { phone: 'Teléfono', code: 'Banca', views: 'Artículos vistos' } },
@@ -62,6 +64,7 @@ const SHEETS_BY_PAGE: Record<string, SheetDefinition[]> = {
     { key: 'activityMap', name: 'Mapa de actividad', fields: { name: 'Contenido', type: 'Tipo', value: 'Movimientos' } },
     { key: 'dailyNotificationOpens', name: 'Aperturas notificaciones', fields: { date: 'Fecha', value: 'Usuarios únicos', opens: 'Aperturas', users: 'Usuarios' } },
     { key: 'notificationUsers', name: 'Usuarios notificaciones', fields: { phone: 'Teléfono', code: 'Banca', opens: 'Aperturas' } },
+    { key: 'notificationRanking', name: 'Notificaciones por artículo', fields: { name: 'Artículo o notificación', opens: 'Aperturas', users: 'Usuarios', detailId: 'ID artículo', notificationId: 'ID notificación' } },
   ],
   articulos: [
     { key: 'viewRanking', name: 'Artículos más vistos', fields: { title: 'Artículo', views: 'Visualizaciones', users: 'Usuarios' } },
